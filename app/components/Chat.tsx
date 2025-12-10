@@ -7,15 +7,18 @@ import { v4 as uuidv4 } from "uuid";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import ThreadHistory from "./ThreadHistory";
 import { ToolCallDisplay } from "./ToolCallDisplay";
-import { PanelRightOpen, MessageSquarePlus } from "lucide-react";
+import { PanelRightOpen, MessageSquarePlus, Send } from "lucide-react";
 import { useScreenSize } from "../hooks/useScreenSize";
 import { UI_CONSTANTS } from "../lib/constants";
+import ConnectionStatus from "./ConnectionStatus";
+import { env } from "../lib/env";
 
 export default function Chat() {
   const stream = useStreamContext();
   const { messages, isLoading } = stream;
   const [input, setInput] = useState("");
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
+  const [isServiceConnected, setIsServiceConnected] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hideToolCalls, setHideToolCalls] = useQueryState(
     "hideToolCalls",
@@ -26,10 +29,32 @@ export default function Chat() {
     parseAsBoolean.withDefault(true)
   );
   const [threadId, setThreadId] = useQueryState("threadId");
+  const [apiUrl] = useQueryState("apiUrl", env.apiUrl);
+  const [apiKey] = useQueryState("apiKey");
   const isLargeScreen = useScreenSize();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Health check function
+  const checkServiceHealth = async () => {
+    if (!apiUrl) return;
+
+    // Silent error handling
+    const originalConsoleError = console.error;
+    console.error = () => {};
+
+    try {
+      const res = await fetch(`${apiUrl}/info`, {
+        ...(apiKey && { headers: { "X-Api-Key": apiKey } }),
+      });
+      setIsServiceConnected(res.ok);
+    } catch (e) {
+      setIsServiceConnected(false);
+    } finally {
+      console.error = originalConsoleError;
+    }
   };
 
   // Track if we've received the first token of the current AI response
@@ -47,6 +72,17 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Check service health when apiUrl or apiKey changes
+  useEffect(() => {
+    if (!apiUrl) return;
+
+    checkServiceHealth();
+
+    // Check every 30 seconds
+    const interval = setInterval(checkServiceHealth, 30000);
+    return () => clearInterval(interval);
+  }, [apiUrl, apiKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,32 +123,37 @@ export default function Chat() {
            style={{ marginLeft: isLargeScreen ? (chatHistoryOpen ? UI_CONSTANTS.SIDEBAR_WIDTH : "0px") : "0" }}
       >
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Toggle Sidebar Button - Only show when sidebar is collapsed */}
-            {!chatHistoryOpen && isLargeScreen && (
-              <button
-                onClick={() => setChatHistoryOpen(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
-                title="Open Chat History"
-              >
-                <PanelRightOpen className="w-5 h-5" />
-              </button>
-            )}
-            <h1 className="text-xl font-semibold text-gray-900">AI Assistant</h1>
-          </div>
+        <div className="bg-white border-b border-gray-200 px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Toggle Sidebar Button - Only show when sidebar is collapsed */}
+              {!chatHistoryOpen && isLargeScreen && (
+                <button
+                  onClick={() => setChatHistoryOpen(true)}
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+                  title="Open Chat History"
+                >
+                  <PanelRightOpen className="w-5 h-5" />
+                </button>
+              )}
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold text-gray-900">LangChain Chatbot</h1>
+                <ConnectionStatus />
+              </div>
+            </div>
 
-          {/* New Chat Button */}
-          <button
-            onClick={() => {
-              // Clear threadId to start new chat
-              setThreadId(null);
-            }}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
-            title="New Chat"
-          >
-            <MessageSquarePlus className="w-5 h-5" />
-          </button>
+            {/* New Chat Button */}
+            <button
+              onClick={() => {
+                // Clear threadId to start new chat
+                setThreadId(null);
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+              title="New Chat"
+            >
+              <MessageSquarePlus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
       {/* Messages Container */}
@@ -177,59 +218,72 @@ export default function Chat() {
       {/* Input Form */}
       <div className="bg-white border-t border-gray-200 px-4 py-4">
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-          <div className="bg-gray-50 rounded-lg border p-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  !e.metaKey &&
-                  !e.nativeEvent.isComposing
-                ) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              placeholder="Type your message..."
-              className="w-full px-3 py-2 border-none bg-transparent resize-none outline-none focus:outline-none text-gray-900 placeholder:text-gray-500"
-              disabled={isLoading}
-              rows={1}
-            />
-
-            <div className="flex items-center justify-between px-1 pt-1">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="hide-tool-calls"
-                  checked={hideToolCalls}
-                  onChange={(e) => setHideToolCalls(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          <div className="bg-gray-50 rounded-lg border p-3">
+            <div className="flex items-end gap-3">
+              <div className="flex-1">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === "Enter" &&
+                      !e.shiftKey &&
+                      !e.metaKey &&
+                      !e.nativeEvent.isComposing
+                    ) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                  placeholder={isServiceConnected ? "Type your message..." : "Service unavailable..."}
+                  className={`w-full px-3 py-2 border-none bg-transparent resize-none outline-none focus:outline-none text-gray-900 placeholder:text-gray-500 ${
+                    !isServiceConnected ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={isLoading || !isServiceConnected}
+                  rows={1}
                 />
-                <label htmlFor="hide-tool-calls" className="text-sm text-gray-600">
-                  Hide Tool Calls
-                </label>
+
+                <div className="flex items-center justify-between px-1 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="hide-tool-calls"
+                      checked={hideToolCalls}
+                      onChange={(e) => setHideToolCalls(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="hide-tool-calls" className="text-sm text-gray-600">
+                      Hide Tool Calls
+                    </label>
+                  </div>
+                </div>
               </div>
 
-              {isLoading ? (
-                <button
-                  type="button"
-                  onClick={() => stream.stop?.()}
-                  className="px-4 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center gap-2"
-                >
-                  <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                  Cancel
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={!input.trim()}
-                  className="px-4 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
-                >
-                  Send
-                </button>
-              )}
+              <div className="flex items-center">
+                {isLoading ? (
+                  <button
+                    type="button"
+                    onClick={() => stream.stop?.()}
+                    className="p-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 flex items-center justify-center"
+                    title="Stop generation"
+                  >
+                    <div className="w-5 h-5 border border-white border-t-transparent rounded-full animate-spin"></div>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || !isServiceConnected}
+                    className={`p-3 rounded-xl transition-all duration-200 flex items-center justify-center ${
+                      isServiceConnected && input.trim()
+                        ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 shadow-lg hover:shadow-xl'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                    title={isServiceConnected ? "Send message" : "Service unavailable"}
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </form>

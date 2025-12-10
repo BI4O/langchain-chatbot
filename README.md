@@ -66,6 +66,7 @@ app/
 │   ├── Chat.tsx              # 主聊天界面
 │   ├── ThreadHistory.tsx     # 对话历史侧边栏
 │   ├── ToolCallDisplay.tsx   # 工具调用展示
+│   ├── ConnectionStatus.tsx  # 服务连接状态
 │   └── RedirectWithParams.tsx # URL 参数重定向
 ├── provider/            # 状态管理
 │   ├── Stream.tsx            # 流式数据管理
