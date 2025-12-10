@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQueryState } from "nuqs";
+import { useQueryState, parseAsString } from "nuqs";
 import { env } from "../lib/env";
 import ConfigModal from "./ConfigModal";
 
@@ -24,7 +24,7 @@ async function checkGraphStatus(apiUrl: string, apiKey: string | null): Promise<
 }
 
 export default function ConnectionStatus() {
-  const [apiUrl] = useQueryState("apiUrl", env.apiUrl);
+  const [apiUrl] = useQueryState("apiUrl", parseAsString.withDefault(env.apiUrl));
   const [apiKey] = useQueryState("apiKey");
   const [status, setStatus] = useState<'loading' | 'connected' | 'error'>('loading');
   const [isModalOpen, setIsModalOpen] = useState(false);

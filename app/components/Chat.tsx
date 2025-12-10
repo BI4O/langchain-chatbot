@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useStreamContext } from "../provider/Stream";
 import { type Message } from "@langchain/langgraph-sdk";
 import { v4 as uuidv4 } from "uuid";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { useQueryState, parseAsBoolean, parseAsString } from "nuqs";
 import ThreadHistory from "./ThreadHistory";
 import { ToolCallDisplay } from "./ToolCallDisplay";
 import { PanelRightOpen, MessageSquarePlus, Send } from "lucide-react";
@@ -29,7 +29,7 @@ export default function Chat() {
     parseAsBoolean.withDefault(true)
   );
   const [threadId, setThreadId] = useQueryState("threadId");
-  const [apiUrl] = useQueryState("apiUrl", env.apiUrl);
+  const [apiUrl] = useQueryState("apiUrl", parseAsString.withDefault(env.apiUrl));
   const [apiKey] = useQueryState("apiKey");
   const isLargeScreen = useScreenSize();
 

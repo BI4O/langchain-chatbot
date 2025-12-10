@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useQueryState } from "nuqs";
+import { useQueryState, parseAsString } from "nuqs";
 import { env } from "../lib/env";
 import { X, Settings, Check, AlertCircle } from "lucide-react";
 
@@ -12,8 +12,8 @@ interface ConfigModalProps {
 }
 
 export default function ConfigModal({ isOpen, onClose, initialStatus }: ConfigModalProps) {
-  const [apiUrl, setApiUrl] = useQueryState("apiUrl", env.apiUrl);
-  const [assistantId, setAssistantId] = useQueryState("assistantId", env.assistantId);
+  const [apiUrl, setApiUrl] = useQueryState("apiUrl", parseAsString.withDefault(env.apiUrl));
+  const [assistantId, setAssistantId] = useQueryState("assistantId", parseAsString.withDefault(env.assistantId));
   const [tempApiUrl, setTempApiUrl] = useState(apiUrl);
   const [tempAssistantId, setTempAssistantId] = useState(assistantId);
 

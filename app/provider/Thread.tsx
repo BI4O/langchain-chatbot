@@ -3,7 +3,7 @@
 import { validate } from "uuid";
 import { env } from "../lib/env";
 import { Thread } from "@langchain/langgraph-sdk";
-import { useQueryState } from "nuqs";
+import { useQueryState, parseAsString } from "nuqs";
 import {
   createContext,
   useContext,
@@ -37,8 +37,8 @@ function getThreadSearchMetadata(
 }
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
-  const [apiUrl] = useQueryState("apiUrl", env.apiUrl);
-  const [assistantId] = useQueryState("assistantId", env.assistantId);
+  const [apiUrl] = useQueryState("apiUrl", parseAsString.withDefault(env.apiUrl));
+  const [assistantId] = useQueryState("assistantId", parseAsString.withDefault(env.assistantId));
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
 

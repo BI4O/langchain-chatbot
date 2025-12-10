@@ -14,7 +14,7 @@ import {
   type UIMessage,
   type RemoveUIMessage,
 } from "@langchain/langgraph-sdk/react-ui";
-import { useQueryState } from "nuqs";
+import { useQueryState, parseAsString } from "nuqs";
 import { env } from "../lib/env";
 import { UI_CONSTANTS } from "../lib/constants";
 import { toast } from "sonner";
@@ -136,11 +136,11 @@ const StreamSession = ({
 // Stream Provider 组件
 export const StreamProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Read from environment variables via env module
-  const [apiUrl] = useQueryState("apiUrl", env.apiUrl);
-  const [assistantId] = useQueryState("assistantId", env.assistantId);
+  const [apiUrl] = useQueryState("apiUrl", parseAsString.withDefault(env.apiUrl));
+  const [assistantId] = useQueryState("assistantId", parseAsString.withDefault(env.assistantId));
 
   // API key from environment variables
-  const apiKey = env.apiKey;
+  const apiKey = env.apiKey || null;
 
   return (
     <StreamSession apiKey={apiKey} apiUrl={apiUrl} assistantId={assistantId}>
