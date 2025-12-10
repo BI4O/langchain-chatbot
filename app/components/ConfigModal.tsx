@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQueryState } from "nuqs";
 import { env } from "../lib/env";
 import { X, Settings, Check, AlertCircle } from "lucide-react";
@@ -17,22 +17,54 @@ export default function ConfigModal({ isOpen, onClose, initialStatus }: ConfigMo
   const [tempApiUrl, setTempApiUrl] = useState(apiUrl);
   const [tempAssistantId, setTempAssistantId] = useState(assistantId);
 
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     setApiUrl(tempApiUrl);
     setAssistantId(tempAssistantId);
     onClose();
-  };
+  }, [tempApiUrl, tempAssistantId, setApiUrl, setAssistantId, onClose]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setTempApiUrl(env.apiUrl);
     setTempAssistantId(env.assistantId);
-  };
+    // Immediately apply the default values
+    setApiUrl(env.apiUrl);
+    setAssistantId(env.assistantId);
+  }, [setTempApiUrl, setTempAssistantId, setApiUrl, setAssistantId]);
+
+  // Handle keyboard events
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        handleApply();
+      } else if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, tempApiUrl, tempAssistantId, handleApply, onClose]);
+
+  // Handle background click
+  const handleBackdropClick = useCallback((event: React.MouseEvent) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  }, [onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+    <div
+      className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -101,9 +133,10 @@ export default function ConfigModal({ isOpen, onClose, initialStatus }: ConfigMo
         <div className="flex items-center justify-between pt-4">
           <button
             onClick={handleReset}
-            className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            title="Reset to environment defaults and apply immediately"
           >
-            Reset to defaults
+            Reset & Apply
           </button>
           <div className="flex gap-2">
             <button
