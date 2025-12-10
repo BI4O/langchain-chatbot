@@ -44,16 +44,21 @@ async function sleep(ms = UI_CONSTANTS.SLEEP_DELAY) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// 健康检查函数
-async function checkGraphStatus(apiUrl: string, apiKey: string | null): Promise<boolean> {
+// 健康检查函数（简化版，主要错误处理在 ConnectionStatus 组件中）
+async function checkGraphStatus(apiUrl: string, apiKey: string | null): Promise<{ ok: boolean; error?: string }> {
+  // 静默处理网络错误
+  const originalConsoleError = console.error;
+  console.error = () => {};
+
   try {
     const res = await fetch(`${apiUrl}/info`, {
       ...(apiKey && { headers: { "X-Api-Key": apiKey } }),
     });
-    return res.ok;
+    return { ok: res.ok };
   } catch (e) {
-    console.error(e);
-    return false;
+    return { ok: false };
+  } finally {
+    console.error = originalConsoleError;
   }
 }
 
@@ -104,13 +109,16 @@ const StreamSession = ({
     }
   }, [streamValue.values?.messages, threadId, getThreads, setThreads]);
 
-  // 健康检查
+  // 健康检查（简化版，主要状态显示在 ConnectionStatus 组件中）
   useEffect(() => {
-    checkGraphStatus(apiUrl, apiKey).then((ok) => {
-      if (!ok) {
-        toast.error("Failed to connect to LangGraph server", {
-          description: `Unable to connect to ${apiUrl}`,
-          duration: UI_CONSTANTS.TOAST_DURATION,
+    if (!apiUrl) return;
+
+    checkGraphStatus(apiUrl, apiKey).then((result) => {
+      // 只有在严重错误时才显示 Toast，其他情况由 ConnectionStatus 组件处理
+      if (!result.ok && !result.error) {
+        toast.error("Service Connection Error", {
+          description: `Please check if the LangGraph service is running`,
+          duration: 5000,
           richColors: true,
           closeButton: true,
         });
