@@ -8,15 +8,16 @@ export default function RedirectWithParams() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check if URL already has the required parameters
-    if (searchParams.has("apiUrl") && searchParams.has("assistantId")) {
-      return; // Already has parameters, no need to redirect
+    // Only redirect if the URL has NO query parameters at all
+    // This ensures we only redirect from plain localhost:3000 or localhost:3000/
+    const hasAnyParams = Array.from(searchParams.keys()).length > 0;
+
+    if (hasAnyParams) {
+      return; // URL already has some parameters, don't redirect
     }
 
-    // Build URL manually to avoid encoding issues
+    // Build URL with default parameters only for clean URLs
     const newUrl = `/?apiUrl=${encodeURIComponent(env.apiUrl)}&assistantId=${env.assistantId}`;
-
-    // Use window.location.href to force a full navigation
     window.location.href = newUrl;
   }, [searchParams]);
 

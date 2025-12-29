@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQueryState, parseAsString } from "nuqs";
 import { env } from "../lib/env";
+import { navigateToConfig } from "../lib/utils";
 import { X, Settings, Check, AlertCircle } from "lucide-react";
 
 interface ConfigModalProps {
@@ -12,24 +13,38 @@ interface ConfigModalProps {
 }
 
 export default function ConfigModal({ isOpen, onClose, initialStatus }: ConfigModalProps) {
-  const [apiUrl, setApiUrl] = useQueryState("apiUrl", parseAsString.withDefault(env.apiUrl));
-  const [assistantId, setAssistantId] = useQueryState("assistantId", parseAsString.withDefault(env.assistantId));
+  const [apiUrl] = useQueryState("apiUrl", parseAsString.withDefault(env.apiUrl));
+  const [assistantId] = useQueryState("assistantId", parseAsString.withDefault(env.assistantId));
   const [tempApiUrl, setTempApiUrl] = useState(apiUrl);
   const [tempAssistantId, setTempAssistantId] = useState(assistantId);
 
+  // Sync temp values with actual URL values when they change
+  useEffect(() => {
+    setTempApiUrl(apiUrl);
+    setTempAssistantId(assistantId);
+  }, [apiUrl, assistantId]);
+
   const handleApply = useCallback(() => {
-    setApiUrl(tempApiUrl);
-    setAssistantId(tempAssistantId);
+    const configChanged = tempApiUrl !== apiUrl || tempAssistantId !== assistantId;
+
+    if (configChanged) {
+      navigateToConfig({
+        apiUrl: tempApiUrl,
+        assistantId: tempAssistantId,
+        threadId: null, // Clear to start fresh conversation
+      });
+    }
+
     onClose();
-  }, [tempApiUrl, tempAssistantId, setApiUrl, setAssistantId, onClose]);
+  }, [tempApiUrl, tempAssistantId, apiUrl, assistantId]);
 
   const handleReset = useCallback(() => {
-    setTempApiUrl(env.apiUrl);
-    setTempAssistantId(env.assistantId);
-    // Immediately apply the default values
-    setApiUrl(env.apiUrl);
-    setAssistantId(env.assistantId);
-  }, [setTempApiUrl, setTempAssistantId, setApiUrl, setAssistantId]);
+    navigateToConfig({
+      apiUrl: env.apiUrl,
+      assistantId: env.assistantId,
+      threadId: null, // Clear to start fresh conversation
+    });
+  }, []);
 
   // Handle keyboard events
   useEffect(() => {

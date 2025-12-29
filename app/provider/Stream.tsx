@@ -77,6 +77,9 @@ const StreamSession = ({
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
 
+  // Note: Thread clearing is now handled in ConfigModal.tsx via direct navigation
+// No need to duplicate the logic here
+
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,

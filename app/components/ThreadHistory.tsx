@@ -6,7 +6,6 @@ import { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { getContentString } from "../lib/utils";
 import { Menu, X, MessageSquarePlus, PanelRightOpen, PanelRightClose } from "lucide-react";
-import { useScreenSize } from "../hooks/useScreenSize";
 import { UI_CONSTANTS } from "../lib/constants";
 
 function ThreadList({
@@ -20,8 +19,6 @@ function ThreadList({
   currentThreadId?: string | null;
   setThreadId: (threadId: string | null) => void;
 }) {
-  console.log("ThreadList rendering with threads:", threads);
-
   return (
     <div className="h-full flex flex-col w-full max-h-full">
       {/* Thread List */}
@@ -94,7 +91,6 @@ export default function ThreadHistory() {
   );
   const [apiUrl] = useQueryState("apiUrl");
   const [assistantId] = useQueryState("assistantId");
-  const isLargeScreen = useScreenSize();
 
   const { getThreads, threads, setThreads, threadsLoading, setThreadsLoading } =
     useThreads();
@@ -102,22 +98,19 @@ export default function ThreadHistory() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!apiUrl || !assistantId) {
-      console.log("No apiUrl or assistantId configured, skipping thread fetch");
       setThreadsLoading(false);
       return;
     }
     setThreadsLoading(true);
-    console.log("Fetching threads...", { apiUrl, assistantId });
     getThreads()
       .then((threads) => {
-        console.log("Fetched threads:", threads);
         setThreads(threads);
       })
       .catch((error) => {
         console.error("Failed to fetch threads:", error);
       })
       .finally(() => setThreadsLoading(false));
-  }, [getThreads, setThreads, setThreadsLoading, apiUrl, assistantId]);
+  }, [apiUrl, assistantId, getThreads]);
 
   
   const [threadId, setThreadId] = useQueryState("threadId");
@@ -152,6 +145,7 @@ export default function ThreadHistory() {
               threads={threads}
               currentThreadId={threadId}
               setThreadId={setThreadId}
+              onThreadClick={(threadId) => setThreadId(threadId)}
             />
           )}
         </div>
@@ -192,7 +186,10 @@ export default function ThreadHistory() {
               ) : (
                 <ThreadList
                   threads={threads}
-                  onThreadClick={() => setChatHistoryOpen(false)}
+                  onThreadClick={(threadId) => {
+                    setThreadId(threadId);
+                    setChatHistoryOpen(false);
+                  }}
                   currentThreadId={threadId}
                   setThreadId={setThreadId}
                 />
