@@ -5,6 +5,8 @@ import { useStreamContext } from "../provider/Stream";
 import { type Message } from "@langchain/langgraph-sdk";
 import { v4 as uuidv4 } from "uuid";
 import { useQueryState, parseAsBoolean, parseAsString } from "nuqs";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import ThreadHistory from "./ThreadHistory";
 import { ToolCallDisplay } from "./ToolCallDisplay";
 import { PanelRightOpen, MessageSquarePlus, Send } from "lucide-react";
@@ -191,9 +193,128 @@ export default function Chat() {
                         : 'bg-white border border-gray-200 text-gray-900'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">
-                      {content}
-                    </p>
+                    {message.type === 'human' ? (
+                      <p className="whitespace-pre-wrap">
+                        {content}
+                      </p>
+                    ) : (
+                      <div className="prose prose-sm max-w-none prose-gray">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code({ node, inline, className, children, ...props }: any) {
+                              const match = /language-(\w+)/.exec(className || '');
+                              return !inline && match ? (
+                                <pre className="bg-gray-900 text-gray-100 rounded-lg p-3 overflow-x-auto my-2">
+                                  <code className={`language-${match[1]}`} {...props}>
+                                    {children}
+                                  </code>
+                                </pre>
+                              ) : (
+                                <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                                  {children}
+                                </code>
+                              );
+                            },
+                            blockquote({ children }) {
+                              return (
+                                <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-2">
+                                  {children}
+                                </blockquote>
+                              );
+                            },
+                            ul({ children }) {
+                              return (
+                                <ul className="list-disc list-inside my-2 space-y-1">
+                                  {children}
+                                </ul>
+                              );
+                            },
+                            ol({ children }) {
+                              return (
+                                <ol className="list-decimal list-inside my-2 space-y-1">
+                                  {children}
+                                </ol>
+                              );
+                            },
+                            h1({ children }) {
+                              return (
+                                <h1 className="text-xl font-bold text-gray-900 mt-3 mb-2">
+                                  {children}
+                                </h1>
+                              );
+                            },
+                            h2({ children }) {
+                              return (
+                                <h2 className="text-lg font-semibold text-gray-800 mt-2 mb-1">
+                                  {children}
+                                </h2>
+                              );
+                            },
+                            h3({ children }) {
+                              return (
+                                <h3 className="text-base font-semibold text-gray-800 mt-2 mb-1">
+                                  {children}
+                                </h3>
+                              );
+                            },
+                            table({ children }) {
+                              return (
+                                <div className="overflow-x-auto my-2">
+                                  <table className="min-w-full border border-gray-300 divide-y divide-gray-200 rounded-lg overflow-hidden">
+                                    {children}
+                                  </table>
+                                </div>
+                              );
+                            },
+                            thead({ children }) {
+                              return (
+                                <thead className="bg-gray-50">
+                                  {children}
+                                </thead>
+                              );
+                            },
+                            tbody({ children }) {
+                              return (
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                  {children}
+                                </tbody>
+                              );
+                            },
+                            tr({ children }) {
+                              return (
+                                <tr className="hover:bg-gray-50">
+                                  {children}
+                                </tr>
+                              );
+                            },
+                            th({ children }) {
+                              return (
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                                  {children}
+                                </th>
+                              );
+                            },
+                            td({ children }) {
+                              return (
+                                <td className="px-3 py-2 text-sm text-gray-700 border-b border-gray-100">
+                                  {children}
+                                </td>
+                              );
+                            },
+                            p({ children }) {
+                              return (
+                                <p className="my-1 leading-relaxed">
+                                  {children}
+                                </p>
+                              );
+                            },
+                          }}
+                        >
+                          {content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
