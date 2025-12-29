@@ -137,7 +137,7 @@ export default function Chat() {
                 </button>
               )}
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-gray-900">LangChain Chatbot</h1>
+                <h1 className="text-xl font-semibold text-gray-900">LangBot</h1>
                 <ConnectionStatus />
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function Chat() {
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 mt-8">
-              <p>Start a conversation with the AI assistant</p>
+              <p>Start a conversation with LangBot</p>
             </div>
           ) : (
             messages.map((message, index) => {
